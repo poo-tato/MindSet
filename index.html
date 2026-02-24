@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mind Archive | 나만의 감성 기록소</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700&family=Noto+Sans+KR:wght@100;300;400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0c10;
+            --card: #1a1c23;
+            --accent: #a5b4fc;
+            --text: #c7d2fe;
+            --muted: #6366f1;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Noto Sans KR', sans-serif;
+            line-height: 1.6;
+            padding: 60px 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .layout { width: 100%; max-width: 650px; }
+
+        header { margin-bottom: 50px; text-align: center; }
+        header h1 { 
+            font-family: 'Nanum+Myeongjo', serif; 
+            font-size: 2.2rem; 
+            letter-spacing: 4px; 
+            font-weight: 400;
+            color: var(--accent);
+        }
+        header p { font-size: 0.9rem; color: #4b5563; margin-top: 10px; }
+
+        /* 입력 영역 */
+        .input-box {
+            background: var(--card);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid #2d333b;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            margin-bottom: 60px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 180px;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 1.1rem;
+            font-family: 'Nanum+Myeongjo', serif;
+            resize: none;
+            outline: none;
+            line-height: 1.8;
+        }
+
+        .input-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #2d333b;
+        }
+
+        .controls-left { display: flex; gap: 15px; align-items: center; }
+
+        select, button {
+            background: #222;
+            color: #ccc;
+            border: 1px solid #3d444d;
+            padding: 10px 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        button:hover { border-color: var(--accent); color: white; }
+        button.primary { background: var(--muted); color: white; border: none; }
+
+        .sand-toggle { font-size: 0.85rem; color: #666; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+
+        .feed { display: flex; flex-direction: column; gap: 20px; }
+        .post {
+            background: var(--card);
+            padding: 25px;
+            border-radius: 15px;
+            border-left: 2px solid var(--accent);
+            position: relative;
+            animation: fadeIn 0.6s ease;
+        }
+
+        .post-header { display: flex; justify-content: space-between; font-size: 0.75rem; color: #4b5563; margin-bottom: 12px; }
+        .post-content { font-family: 'Nanum+Myeongjo', serif; font-size: 1.05rem; white-space: pre-wrap; }
+
+        /* 사라지는 효과 (Sand Mode) */
+        .sand-fade { animation: sandBurn 6s forwards; }
+        @keyframes sandBurn {
+            0% { opacity: 1; filter: blur(0); }
+            70% { opacity: 0.5; filter: blur(2px); }
+            100% { opacity: 0; filter: blur(15px); transform: translateY(-30px); }
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .music-widget {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            background: rgba(26, 28, 35, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 12px 20px;
+            border-radius: 50px;
+            border: 1px solid #2d333b;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+
+<div class="layout">
+    <header>
+        <h1>Mind Archive</h1>
+        <p>복잡한 생각이 머무는 고요한 밤의 기록</p>
+    </header>
+
+    <div class="input-box">
+        <textarea id="mainInput" placeholder="지금 이 순간, 당신을 가득 채운 문장들을 적어보세요..."></textarea>
+        <div class="input-footer">
+            <div class="controls-left">
+                <select id="moodSelect">
+                    <option value="🌙 고요한">🌙 고요한</option>
+                    <option value="🌊 일렁이는">🌊 일렁이는</option>
+                    <option value="🥀 무거운">🥀 무거운</option>
+                    <option value="✨ 반짝이는">✨ 반짝이는</option>
+                </select>
+                <label class="sand-toggle">
+                    <input type="checkbox" id="sandMode"> 모래성 모드
+                </label>
+            </div>
+            <button class="primary" onclick="Archive.save()">Archive</button>
+        </div>
+    </div>
+
+    <div class="feed" id="feed"></div>
+</div>
+
+<div class="music-widget">
+    <span style="font-size: 0.8rem; color: var(--accent);">🎵 Lofi Radio</span>
+    <button id="musicBtn" onclick="Archive.toggleMusic()">Play</button>
+    <div id="player-container" style="display:none;"></div>
+</div>
+
+<script>
+    const Archive = {
+        posts: [],
+        isPlaying: false,
+        typewriter: new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3'),
+
+        init() {
+            this.posts = JSON.parse(localStorage.getItem('my_mind_archive') || '[]');
+            this.render();
+            this.setupAudio();
+        },
+
+        setupAudio() {
+            const input = document.getElementById('mainInput');
+            input.addEventListener('keydown', () => {
+                this.typewriter.currentTime = 0;
+                this.typewriter.volume = 0.4;
+                this.typewriter.play().catch(() => {}); 
+            });
+        },
+
+        save() {
+            const input = document.getElementById('mainInput');
+            const mood = document.getElementById('moodSelect').value;
+            const isSand = document.getElementById('sandMode').checked;
+            const content = input.value.trim();
+
+            if (!content) return;
+
+            const postData = {
+                id: Date.now(),
+                content: content,
+                mood: mood,
+                date: new Date().toLocaleString('ko-KR'),
+                isSand: isSand
+            };
+
+            if (isSand) {
+                this.renderSandPost(postData);
+            } else {
+                this.posts.unshift(postData);
+                localStorage.setItem('my_mind_archive', JSON.stringify(this.posts));
+                this.render();
+            }
+
+            input.value = '';
+        },
+
+        render() {
+            const feed = document.getElementById('feed');
+            feed.innerHTML = this.posts.map(post => `
+                <div class="post">
+                    <div class="post-header">
+                        <span>${post.date} | ${post.mood}</span>
+                        <span style="cursor:pointer" onclick="Archive.delete(${post.id})">삭제</span>
+                    </div>
+                    <div class="post-content">${this.escape(post.content)}</div>
+                </div>
+            `).join('');
+        },
+
+        renderSandPost(post) {
+            const feed = document.getElementById('feed');
+            const sandElem = document.createElement('div');
+            sandElem.className = 'post sand-fade';
+            sandElem.innerHTML = `
+                <div class="post-header"><span>${post.date} | ⏳ 사라지는 생각</span></div>
+                <div class="post-content">${this.escape(post.content)}</div>
+            `;
+            feed.prepend(sandElem);
+            setTimeout(() => sandElem.remove(), 6000);
+        },
+
+        delete(id) {
+            if(confirm("이 기억을 지울까요?")) {
+                this.posts = this.posts.filter(p => p.id !== id);
+                localStorage.setItem('my_mind_archive', JSON.stringify(this.posts));
+                this.render();
+            }
+        },
+
+        toggleMusic() {
+            const container = document.getElementById('player-container');
+            const btn = document.getElementById('musicBtn');
+            
+            if (!this.isPlaying) {
+                container.innerHTML = `<iframe width="1" height="1" src="https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&mute=0" frameborder="0" allow="autoplay"></iframe>`;
+                btn.innerText = 'Pause';
+                this.isPlaying = true;
+            } else {
+                container.innerHTML = '';
+                btn.innerText = 'Play';
+                this.isPlaying = false;
+            }
+        },
+
+        escape(html) {
+            const text = document.createTextNode(html);
+            const p = document.createElement('p');
+            p.appendChild(text);
+            return p.innerHTML;
+        }
+    };
+
+    Archive.init();
+</script>
+</body>
+</html>
