@@ -23,7 +23,7 @@ graph TD
     Sand --> End((마음 정돈 완료))
     List --> End
 
-```mindmap
+mindmap
   root((Mind Archive))
     Frontend
       HTML5
