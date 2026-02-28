@@ -22,3 +22,15 @@ graph TD
     Archive --> List[프라이빗 아카이브]
     Sand --> End((마음 정돈 완료))
     List --> End
+
+```mindmap
+  root((Mind Archive))
+    Frontend
+      HTML5
+      CSS3
+      Vanilla JS
+    Experience
+      Web Audio API (ASMR)
+      YouTube IFrame API (BGM)
+    Data
+      Local Storage (Private)
